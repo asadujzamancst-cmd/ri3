@@ -32,7 +32,7 @@ export default function PaymentTable() {
   const tableRef = useRef<HTMLTableElement>(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/payment/payments/')
+    fetch('https://institutemanagement3.onrender.com/payment/payments/')
       .then((res) => res.json())
       .then((data) => {
         setPayments(data);
