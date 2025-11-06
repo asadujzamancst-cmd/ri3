@@ -37,20 +37,34 @@ export default function ExamPage() {
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [timerActive, setTimerActive] = useState(false)
 
+  // ✅ Correct Exam Fetch URL
   useEffect(() => {
-    fetch('https://institutemanagement3.onrender.com/payment/students/exams/exams/')
-      .then(res => res.json())
+    fetch('https://institutemanagement3.onrender.com/exams/exams/')
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(`Failed to fetch exams: ${text}`)
+        }
+        return res.json()
+      })
       .then(data => setExams(data))
       .catch(err => console.error('Failed to load exams', err))
   }, [])
 
+  // ✅ Fetch Questions for Selected Exam
   useEffect(() => {
     if (selectedExamId) {
       fetch(`https://institutemanagement3.onrender.com/exams/questions/?exam_id=${selectedExamId}`)
-        .then(res => res.json())
+        .then(async res => {
+          if (!res.ok) {
+            const text = await res.text()
+            throw new Error(`Failed to fetch questions: ${text}`)
+          }
+          return res.json()
+        })
         .then(data => {
           setQuestions(data)
-          setTimeLeft(60 * 5)
+          setTimeLeft(60 * 5) // 5 minutes timer
           setTimerActive(true)
         })
         .catch(err => console.error('Failed to load questions', err))
@@ -59,6 +73,7 @@ export default function ExamPage() {
     }
   }, [selectedExamId])
 
+  // ✅ Countdown Timer
   useEffect(() => {
     if (timerActive && timeLeft > 0) {
       const interval = setInterval(() => setTimeLeft(t => t - 1), 1000)
@@ -69,6 +84,7 @@ export default function ExamPage() {
     }
   }, [timeLeft, timerActive])
 
+  // ✅ Handle Exam Submission
   const handleSubmit = async () => {
     if (!studentName.trim() || !selectedExamId) {
       alert('Please enter your name and select an exam.')
@@ -79,16 +95,21 @@ export default function ExamPage() {
       const res = await fetch('https://institutemanagement3.onrender.com/exams/submit-exam/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: studentName, exam_id: selectedExamId, answers }),
+        body: JSON.stringify({
+          name: studentName,
+          exam_id: selectedExamId,
+          answers,
+        }),
       })
 
+      const text = await res.text()
       if (!res.ok) {
-        const errorData = await res.json()
-        alert(`❌ Submit failed: ${errorData.error || 'Unknown error'}`)
+        console.error('❌ Submit failed:', text)
+        alert('❌ Submit failed: Invalid response from server.')
         return
       }
 
-      const data = await res.json()
+      const data = JSON.parse(text)
       alert(`✅ Submitted! Your score: ${data.score}`)
       setSubmitted(true)
       setTimerActive(false)
@@ -99,15 +120,24 @@ export default function ExamPage() {
     }
   }
 
+  // ✅ Fetch Student Results
   const fetchResults = () => {
+    if (!studentName) return
     setLoading(true)
     fetch(`https://institutemanagement3.onrender.com/exams/results/?student_name=${encodeURIComponent(studentName)}`)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(`Failed to fetch results: ${text}`)
+        }
+        return res.json()
+      })
       .then(data => setResults(data))
       .catch(err => console.error('Failed to fetch results', err))
       .finally(() => setLoading(false))
   }
 
+  // ✅ CSV Export
   const exportCSV = () => {
     if (results.length === 0) {
       alert('No results to export.')
@@ -132,6 +162,7 @@ export default function ExamPage() {
     URL.revokeObjectURL(url)
   }
 
+  // ✅ Print Function
   const handlePrint = () => {
     const printContents = document.getElementById('results-table')?.outerHTML
     if (printContents) {
@@ -163,6 +194,7 @@ export default function ExamPage() {
     <div className="p-6 max-w-3xl mx-auto mt-20 text-black dark:text-white">
       <h1 className="text-3xl font-bold mb-6">📝 Online Exam</h1>
 
+      {/* Student Name */}
       <div className="mb-4">
         <label className="font-semibold block mb-1">👤 Student Name</label>
         <input
@@ -174,6 +206,7 @@ export default function ExamPage() {
         />
       </div>
 
+      {/* Select Exam */}
       <div className="mb-6">
         <label className="font-semibold block mb-1">📚 Select Exam</label>
         <select
@@ -189,6 +222,7 @@ export default function ExamPage() {
         </select>
       </div>
 
+      {/* Questions */}
       {questions.length > 0 && !submitted && (
         <>
           <div className="mb-4 text-right text-lg font-semibold text-red-600">
@@ -222,6 +256,7 @@ export default function ExamPage() {
         </>
       )}
 
+      {/* Results */}
       {submitted && (
         <div className="mt-10">
           <h2 className="text-2xl font-semibold mb-4">📊 Results</h2>
