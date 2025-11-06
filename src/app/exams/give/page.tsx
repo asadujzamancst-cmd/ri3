@@ -46,7 +46,7 @@ export default function ExamPage() {
 
   useEffect(() => {
     if (selectedExamId) {
-      fetch(`http://127.0.0.1:8000/exams/questions/?exam_id=${selectedExamId}`)
+      fetch(`https://institutemanagement3.onrender.com/exams/questions/?exam_id=${selectedExamId}`)
         .then(res => res.json())
         .then(data => {
           setQuestions(data)
@@ -76,7 +76,7 @@ export default function ExamPage() {
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/exams/submit-exam/', {
+      const res = await fetch('https://institutemanagement3.onrender.com/exams/submit-exam/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: studentName, exam_id: selectedExamId, answers }),
@@ -101,7 +101,7 @@ export default function ExamPage() {
 
   const fetchResults = () => {
     setLoading(true)
-    fetch(`http://127.0.0.1:8000/exams/results/?student_name=${encodeURIComponent(studentName)}`)
+    fetch(`https://institutemanagement3.onrender.com/exams/results/?student_name=${encodeURIComponent(studentName)}`)
       .then(res => res.json())
       .then(data => setResults(data))
       .catch(err => console.error('Failed to fetch results', err))
