@@ -35,12 +35,12 @@ export default function AttendancePage() {
 
   // Fetch attendance and students
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/attendance/attendance/')
+    fetch('https://institutemanagement3.onrender.com/attendance/attendance/')
       .then(res => res.json())
       .then(setAttendance)
       .catch(() => console.error('Failed to load attendance'));
 
-    fetch('http://127.0.0.1:8000/payment/students/')
+    fetch('https://institutemanagement3.onrender.com/payment/students/')
       .then(res => res.json())
       .then(setStudents)
       .catch(() => console.error('Failed to load students'));

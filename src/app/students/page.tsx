@@ -24,7 +24,7 @@ interface Attendance {
   student: number;
 }
 
-const API_BASE_URL = 'https://institutemanagement3.onrender.com/';
+const API_BASE_URL = 'https://institutemanagement3.onrender.com'; // ❌ removed trailing slash
 
 export default function StudentPortal() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -32,34 +32,46 @@ export default function StudentPortal() {
   const [searchId, setSearchId] = useState('');
   const [searchPassword, setSearchPassword] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-
-  const [monthFilter, setMonthFilter] = useState(new Date().toISOString().split('T')[0].slice(0, 7)); // YYYY-MM
+  const [monthFilter, setMonthFilter] = useState(
+    new Date().toISOString().split('T')[0].slice(0, 7)
+  ); // YYYY-MM
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [currentPasswordCheck, setCurrentPasswordCheck] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
 
   const router = useRouter();
-    // ✅ Check if teacher is logged in
 
-
+  // ✅ Fetch students and attendance
   useEffect(() => {
-    fetch(`${API_BASE_URL}/payment/students/`)
-      .then(res => res.json())
-      .then((data: Student[]) => setStudents(data))
-      .catch(err => console.error('Error fetching students:', err));
+    const fetchData = async () => {
+      try {
+        const studentRes = await fetch(`${API_BASE_URL}/payment/students/`);
+        if (!studentRes.ok) throw new Error(`Student fetch failed (${studentRes.status})`);
+        const studentData: Student[] = await studentRes.json();
+        setStudents(studentData);
+      } catch (err) {
+        console.error('❌ Error fetching students:', err);
+      }
 
-    fetch(`${API_BASE_URL}/attendance/attendance/`)
-      .then(res => res.json())
-      .then((data: Attendance[]) => setAttendance(data))
-      .catch(err => console.error('Error fetching attendance:', err));
+      try {
+        const attendanceRes = await fetch(`${API_BASE_URL}/attendance/attendance/`);
+        if (!attendanceRes.ok) throw new Error(`Attendance fetch failed (${attendanceRes.status})`);
+        const attendanceData: Attendance[] = await attendanceRes.json();
+        setAttendance(attendanceData);
+      } catch (err) {
+        console.error('❌ Error fetching attendance:', err);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleBack = () => router.back();
 
   const handleSearch = () => {
     const found = students.find(
-      s => s.student_id === searchId.trim() && s.password === searchPassword.trim()
+      (s) => s.student_id === searchId.trim() && s.password === searchPassword.trim()
     );
     if (!found) alert('No student found with that ID and password!');
     setSelectedStudent(found || null);
@@ -90,29 +102,32 @@ export default function StudentPortal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedStudent),
       });
+
       if (res.ok) {
         alert('✅ Password updated successfully!');
         setSelectedStudent(updatedStudent);
         setIsUpdatingPassword(false);
       } else {
+        const errorText = await res.text();
+        console.error('Update failed response:', errorText);
         alert('❌ Failed to update password.');
       }
-    } catch {
+    } catch (err) {
+      console.error('Network error:', err);
       alert('❌ Network error.');
     }
   };
 
-  // Filter attendance by selected student and month
+  // ✅ Filter attendance
   const filteredAttendance = selectedStudent
     ? attendance.filter(
-        att =>
-          att.student === selectedStudent.id &&
-          att.date.slice(0, 7) === monthFilter // YYYY-MM match
+        (att) =>
+          att.student === selectedStudent.id && att.date.slice(0, 7) === monthFilter
       )
     : [];
 
-  const presentCount = filteredAttendance.filter(att => att.status === 'Present').length;
-  const absentCount = filteredAttendance.filter(att => att.status === 'Absent').length;
+  const presentCount = filteredAttendance.filter((att) => att.status === 'Present').length;
+  const absentCount = filteredAttendance.filter((att) => att.status === 'Absent').length;
 
   return (
     <div className="max-w-xl mx-auto mt-20 p-6 bg-white dark:bg-gray-900 rounded shadow relative">
@@ -130,14 +145,14 @@ export default function StudentPortal() {
           type="text"
           placeholder="Enter your Student ID"
           value={searchId}
-          onChange={e => setSearchId(e.target.value)}
+          onChange={(e) => setSearchId(e.target.value)}
           className="px-3 py-2 border rounded dark:bg-gray-800"
         />
         <input
           type="password"
           placeholder="Enter your Password"
           value={searchPassword}
-          onChange={e => setSearchPassword(e.target.value)}
+          onChange={(e) => setSearchPassword(e.target.value)}
           className="px-3 py-2 border rounded dark:bg-gray-800"
         />
         <button
@@ -176,17 +191,19 @@ export default function StudentPortal() {
             <input
               type="month"
               value={monthFilter}
-              onChange={e => setMonthFilter(e.target.value)}
+              onChange={(e) => setMonthFilter(e.target.value)}
               className="px-3 py-2 border rounded dark:bg-gray-800"
             />
           </div>
-                <div className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                <Link href="/attendence "className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-blue-600" >
-          attendence record
-        </Link>
-         <Link href="/payment " className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-blue-600"> payment record</Link>
 
-      </div>
+          <div className="mt-4 flex flex-col gap-2">
+            <Link href="/attendence" className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+              Attendance Record
+            </Link>
+            <Link href="/payment" className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+              Payment Record
+            </Link>
+          </div>
 
           {/* Attendance summary */}
           <div className="mt-4 text-left">
@@ -208,14 +225,14 @@ export default function StudentPortal() {
                 type="password"
                 placeholder="Enter current password"
                 value={currentPasswordCheck}
-                onChange={e => setCurrentPasswordCheck(e.target.value)}
+                onChange={(e) => setCurrentPasswordCheck(e.target.value)}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-800 mb-2"
               />
               <input
                 type="password"
                 placeholder="Enter new password"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-800 mb-2"
               />
               <div className="flex gap-2 justify-center">
@@ -254,7 +271,6 @@ export default function StudentPortal() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
